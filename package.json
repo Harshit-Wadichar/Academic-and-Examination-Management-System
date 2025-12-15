@@ -1,0 +1,29 @@
+{
+  "name": "academic-examination-management-system",
+  "version": "1.0.0",
+  "description": "Integrated Academic and Examination Management System",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../python-ai-service && pip install -r requirements.txt",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd Frontend && npm run dev",
+    "dev:ai": "cd python-ai-service && python main.py",
+    "start:all": "start-project.bat",
+    "build:frontend": "cd Frontend && npm run build",
+    "test:connection": "cd backend && node -e \"require('dotenv').config(); const connectDB = require('./src/config/database'); connectDB().then(() => { console.log('✓ Database connection successful!'); process.exit(0); }).catch(err => { console.error('✗ Database connection failed:', err.message); process.exit(1); });\"",
+    "test:ai": "cd python-ai-service && python test_service.py"
+  },
+  "keywords": [
+    "academic",
+    "examination",
+    "management",
+    "education",
+    "react",
+    "nodejs",
+    "mongodb",
+    "python",
+    "ai"
+  ],
+  "author": "Academic Management Team",
+  "license": "MIT"
+}
