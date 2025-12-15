@@ -5,7 +5,7 @@ import Navbar from './components/common/Layout/Navbar.jsx'
 import Sidebar from './components/common/Layout/Sidebar.jsx'
 import Footer from './components/common/Layout/Footer.jsx'
 import LoadingSpinner from './components/common/UI/LoadingSpinner.jsx'
-import ProtectedRoute from './components/common/Auth/ProtectedRoute.jsx'
+// ProtectedRoute removed — routes are public now
 
 const Home = lazy(() => import('./pages/Home.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
@@ -29,54 +29,12 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route
-                path="/dashboard/*"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/syllabus"
-                element={
-                  <ProtectedRoute>
-                    <SyllabusPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/hallticket"
-                element={
-                  <ProtectedRoute>
-                    <HallTicketPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/seating"
-                element={
-                  <ProtectedRoute>
-                    <SeatingPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/events"
-                element={
-                  <ProtectedRoute>
-                    <EventsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/dashboard/*" element={<Dashboard />} />
+              <Route path="/syllabus" element={<SyllabusPage />} />
+              <Route path="/hallticket" element={<HallTicketPage />} />
+              <Route path="/seating" element={<SeatingPage />} />
+              <Route path="/events" element={<EventsPage />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import useAuth from '../hooks/useAuth'
+import { useState } from 'react'
 import Card from '../components/common/UI/Card.jsx'
 import Button from '../components/common/UI/Button.jsx'
 
@@ -8,29 +6,11 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { login, loading, user } = useAuth()
-  const nav = useNavigate()
-  const loc = useLocation()
+  const [info, setInfo] = useState('Authentication is currently disabled. Implement later.')
 
-  // If already logged in, redirect to dashboard
-  useEffect(() => {
-    if (user) {
-      const from = loc.state?.from?.pathname || '/dashboard'
-      nav(from, { replace: true })
-    }
-  }, [user, nav, loc])
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    setError('')
-    try {
-      const result = await login({ email, password })
-      if (result?.user) {
-        nav('/dashboard', { replace: true })
-      }
-    } catch (err) {
-      setError(err?.message || 'Login failed')
-    }
+    setError('Login is disabled. Please implement auth later.')
   }
 
   return (
@@ -59,9 +39,9 @@ export default function Login() {
               required
             />
           </div>
-          <Button className="w-full" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</Button>
+          <Button className="w-full">Login</Button>
         </form>
-        <p className="text-sm text-slate-400 mt-4">Demo: admin@aems.local / admin</p>
+        <p className="text-sm text-slate-400 mt-4">{info}</p>
       </Card>
     </div>
   )
