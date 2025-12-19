@@ -1,189 +1,149 @@
-import React, { useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
-import ProtectedRoute from "./components/common/Auth/ProtectedRoute";
-import RoleBasedRoute from "./components/common/Auth/RoleBasedRoute";
-import Navbar from "./components/common/Layout/Navbar";
-import Sidebar from "./components/common/Layout/Sidebar";
-import Footer from "./components/common/Layout/Footer";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import SyllabusPage from "./pages/SyllabusPage";
-import UserManagement from "./pages/UserManagement";
-import ExamManagement from "./pages/ExamManagement";
-import HallTicket from "./pages/HallTicket";
-import SeatingPage from "./pages/SeatingPage";
-import EventsPage from "./pages/EventsPage";
-import HallManagement from "./components/seating-manager/Halls/HallManagement";
-import ClubManagement from "./components/club-coordinator/Clubs/ClubManagement";
-import { useAuth } from "./hooks/useAuth";
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-const AppLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { isAuthenticated } = useAuth();
+// Lazy load pages for better performance
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const SeatingDashboard = lazy(() => import('./pages/SeatingDashboard'));
+const ClubCoordinatorDashboard = lazy(() => import('./pages/ClubCoordinatorDashboard'));
 
-  if (!isAuthenticated) {
-    return children;
+// Loading component
+const Loading = () => (
+  <div style={styles.loading}>
+    <div style={styles.spinner}></div>
+    <p>Loading...</p>
+  </div>
+);
+
+// Protected Route component
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, getUserRole, loading } = useAuth();
+
+  if (loading) {
+    return <Loading />;
   }
 
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-        <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+  if (allowedRoles) {
+    const userRole = getUserRole();
+    if (!allowedRoles.includes(userRole)) {
+      // Redirect to appropriate dashboard based on role
+      switch (userRole) {
+        case 'student':
+          return <Navigate to="/student" replace />;
+        case 'admin':
+          return <Navigate to="/admin" replace />;
+        case 'seatingManager':
+          return <Navigate to="/seating" replace />;
+        case 'clubCoordinator':
+          return <Navigate to="/club" replace />;
+        default:
+          return <Navigate to="/login" replace />;
+      }
+    }
+  }
 
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-          <div className="min-h-full">{children}</div>
-        </main>
-      </div>
-    </div>
-  );
+  return children;
 };
 
-const App = () => {
+// Role-based dashboard redirect
+const RoleBasedRedirect = () => {
+  const { getUserRole } = useAuth();
+  const role = getUserRole();
+
+  switch (role) {
+    case 'student':
+      return <Navigate to="/student" replace />;
+    case 'admin':
+      return <Navigate to="/admin" replace />;
+    case 'seatingManager':
+      return <Navigate to="/seating" replace />;
+    case 'clubCoordinator':
+      return <Navigate to="/club" replace />;
+    default:
+      return <Navigate to="/login" replace />;
+  }
+};
+
+function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <div className="App">
-            <AppLayout>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+    <AuthProvider>
+      <Router>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
+            {/* Protected routes - role specific */}
+            <Route path="/student" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            } />
 
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
 
-                <Route
-                  path="/syllabus"
-                  element={
-                    <ProtectedRoute>
-                      <SyllabusPage />
-                    </ProtectedRoute>
-                  }
-                />
+            <Route path="/seating" element={
+              <ProtectedRoute allowedRoles={['seatingManager']}>
+                <SeatingDashboard />
+              </ProtectedRoute>
+            } />
 
-                {/* Placeholder routes */}
-                <Route
-                  path="/hall-ticket"
-                  element={
-                    <ProtectedRoute>
-                      <HallTicket />
-                    </ProtectedRoute>
-                  }
-                />
+            <Route path="/club" element={
+              <ProtectedRoute allowedRoles={['clubCoordinator']}>
+                <ClubCoordinatorDashboard />
+              </ProtectedRoute>
+            } />
 
-                <Route
-                  path="/seating"
-                  element={
-                    <ProtectedRoute>
-                      <SeatingPage />
-                    </ProtectedRoute>
-                  }
-                />
+            {/* Root route redirects based on authentication */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <RoleBasedRedirect />
+              </ProtectedRoute>
+            } />
 
-                <Route
-                  path="/events"
-                  element={
-                    <ProtectedRoute>
-                      <EventsPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/users"
-                  element={
-                    <RoleBasedRoute allowedRoles={["admin"]}>
-                      <UserManagement />
-                    </RoleBasedRoute>
-                  }
-                />
-
-                <Route
-                  path="/exams"
-                  element={
-                    <RoleBasedRoute allowedRoles={["admin"]}>
-                      <ExamManagement />
-                    </RoleBasedRoute>
-                  }
-                />
-
-                <Route
-                  path="/halls"
-                  element={
-                    <RoleBasedRoute allowedRoles={["seating-manager", "admin"]}>
-                      <HallManagement />
-                    </RoleBasedRoute>
-                  }
-                />
-
-                <Route
-                  path="/clubs"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={["club-coordinator", "admin"]}
-                    >
-                      <ClubManagement />
-                    </RoleBasedRoute>
-                  }
-                />
-
-                {/* Default redirect */}
-                <Route
-                  path="/"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route
-                  path="*"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-              </Routes>
-            </AppLayout>
-
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: "#363636",
-                  color: "#fff",
-                },
-              }}
-            />
-          </div>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+            {/* Catch all route - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </Router>
+    </AuthProvider>
   );
+}
+
+const styles = {
+  loading: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+    backgroundColor: '#f5f5f5',
+  },
+  spinner: {
+    width: '50px',
+    height: '50px',
+    border: '5px solid #f3f3f3',
+    borderTop: '5px solid #3498db',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    marginBottom: '20px',
+  },
+  '@keyframes spin': {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: 'rotate(360deg)' },
+  },
 };
 
 export default App;

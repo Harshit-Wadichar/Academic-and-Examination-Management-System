@@ -1,43 +1,72 @@
-import api from './api';
-import { API_ENDPOINTS, STORAGE_KEYS } from '../utils/constants';
+import api from '../api/api';
 
-export const authService = {
-  login: async (credentials) => {
-    const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
-    const { token, user } = response.data;
-    
-    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    
-    return { token, user };
-  },
+// Auth service - handles authentication API calls
+const authService = {
+    // Register new user
+    signup: async (userData) => {
+        try {
+            const response = await api.post('/auth/signup', userData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
 
-  register: async (userData) => {
-    const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userData);
-    return response.data;
-  },
+    // Login user
+    login: async (credentials) => {
+        try {
+            const response = await api.post('/auth/login', credentials);
+            
+            // Save token and user data to localStorage
+            if (response.success && response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+            }
+            
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
 
-  logout: async () => {
-    try {
-      await api.post(API_ENDPOINTS.AUTH.LOGOUT);
-    } catch (e) {
-      // Non-blocking: server may be stateless; ignore errors
-    } finally {
-      localStorage.removeItem(STORAGE_KEYS.TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER);
+    // Get current user profile
+    getProfile: async () => {
+        try {
+            const response = await api.get('/users/me');
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // Logout user (clear localStorage)
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+    },
+
+    // Check if user is authenticated
+    isAuthenticated: () => {
+        return !!localStorage.getItem('token');
+    },
+
+    // Get current user from localStorage
+    getCurrentUser: () => {
+        const userStr = localStorage.getItem('user');
+        return userStr ? JSON.parse(userStr) : null;
+    },
+
+    // Get user role
+    getUserRole: () => {
+        const user = authService.getCurrentUser();
+        return user ? user.role : null;
+    },
+
+    // Get token
+    getToken: () => {
+        return localStorage.getItem('token');
     }
-  },
-
-  getCurrentUser: () => {
-    const userStr = localStorage.getItem(STORAGE_KEYS.USER);
-    return userStr ? JSON.parse(userStr) : null;
-  },
-
-  getToken: () => {
-    return localStorage.getItem(STORAGE_KEYS.TOKEN);
-  },
-
-  isAuthenticated: () => {
-    return !!localStorage.getItem(STORAGE_KEYS.TOKEN);
-  }
 };
+
+export default authService;

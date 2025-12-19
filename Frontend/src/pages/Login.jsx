@@ -1,117 +1,261 @@
-import React, { useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import Button from '../components/common/UI/Button';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  
-  const { login, isAuthenticated } = useAuth();
-  const location = useLocation();
-  
-  const from = location.state?.from?.pathname || '/dashboard';
-
-  // Redirect if already logged in
-  if (isAuthenticated) {
-    return <Navigate to={from} replace />;
-  }
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
+    const navigate = useNavigate();
+    const { login, isAuthenticated, getUserRole, error, clearError } = useAuth();
+    
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
     });
-  };
+    const [loading, setLoading] = useState(false);
+    const [loginError, setLoginError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    const result = await login(formData);
-    
-    if (result.success) {
-      toast.success('Login successful!');
-    } else {
-      toast.error(result.error || 'Login failed');
-    }
-    
-    setLoading(false);
-  };
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            redirectBasedOnRole();
+        }
+    }, [isAuthenticated]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Academic Management System
-          </p>
-        </div>
+    // Clear errors when component mounts
+    useEffect(() => {
+        clearError();
+    }, []);
+
+    const redirectBasedOnRole = () => {
+        const role = getUserRole();
+        switch (role) {
+            case 'student':
+                navigate('/student');
+                break;
+            case 'admin':
+                navigate('/admin');
+                break;
+            case 'seatingManager':
+                navigate('/seating');
+                break;
+            case 'clubCoordinator':
+                navigate('/club');
+                break;
+            default:
+                navigate('/');
+        }
+    };
+
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+        // Clear error when user starts typing
+        if (loginError) setLoginError('');
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setLoginError('');
+
+        const result = await login(formData.email, formData.password);
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="input-field mt-1"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="input-field mt-1"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+        if (!result.success) {
+            setLoginError(result.message || 'Login failed');
+        }
+        
+        setLoading(false);
+    };
 
-          <div>
-            <Button
-              type="submit"
-              loading={loading}
-              className="w-full"
-            >
-              Sign in
-            </Button>
-          </div>
-          
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
-                Sign up
-              </Link>
-            </p>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+    return (
+        <div style={styles.container}>
+            <div style={styles.card}>
+                <h2 style={styles.title}>College Management System</h2>
+                <h3 style={styles.subtitle}>Login</h3>
+                
+                {(error || loginError) && (
+                    <div style={styles.errorAlert}>
+                        {error || loginError}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} style={styles.form}>
+                    <div style={styles.formGroup}>
+                        <label htmlFor="email" style={styles.label}>Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                            style={styles.input}
+                            placeholder="Enter your email"
+                        />
+                    </div>
+
+                    <div style={styles.formGroup}>
+                        <label htmlFor="password" style={styles.label}>Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            style={styles.input}
+                            placeholder="Enter your password"
+                            minLength="6"
+                        />
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        style={styles.button}
+                        disabled={loading}
+                    >
+                        {loading ? 'Logging in...' : 'Login'}
+                    </button>
+                </form>
+
+                <div style={styles.footer}>
+                    <p style={styles.footerText}>
+                        Don't have an account?{' '}
+                        <Link to="/register" style={styles.link}>
+                            Register here
+                        </Link>
+                    </p>
+                    <div style={styles.demoInfo}>
+                        <p style={styles.demoText}>Demo Roles:</p>
+                        <ul style={styles.demoList}>
+                            <li>Student: student@college.com</li>
+                            <li>Admin: admin@college.com</li>
+                            <li>Seating Manager: seating@college.com</li>
+                            <li>Club Coordinator: club@college.com</li>
+                            <li>Password: 123456 for all</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const styles = {
+    container: {
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f5f5f5',
+        padding: '20px',
+    },
+    card: {
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        padding: '40px',
+        width: '100%',
+        maxWidth: '400px',
+    },
+    title: {
+        textAlign: 'center',
+        color: '#2c3e50',
+        marginBottom: '10px',
+        fontSize: '24px',
+    },
+    subtitle: {
+        textAlign: 'center',
+        color: '#7f8c8d',
+        marginBottom: '30px',
+        fontSize: '18px',
+    },
+    form: {
+        width: '100%',
+    },
+    formGroup: {
+        marginBottom: '20px',
+    },
+    label: {
+        display: 'block',
+        marginBottom: '8px',
+        color: '#2c3e50',
+        fontWeight: '500',
+    },
+    input: {
+        width: '100%',
+        padding: '12px',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        fontSize: '16px',
+        boxSizing: 'border-box',
+    },
+    button: {
+        width: '100%',
+        padding: '12px',
+        backgroundColor: '#3498db',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        fontSize: '16px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'background-color 0.3s',
+    },
+    buttonHover: {
+        backgroundColor: '#2980b9',
+    },
+    buttonDisabled: {
+        backgroundColor: '#95a5a6',
+        cursor: 'not-allowed',
+    },
+    footer: {
+        marginTop: '30px',
+        textAlign: 'center',
+    },
+    footerText: {
+        color: '#7f8c8d',
+        marginBottom: '20px',
+    },
+    link: {
+        color: '#3498db',
+        textDecoration: 'none',
+        fontWeight: '500',
+    },
+    linkHover: {
+        textDecoration: 'underline',
+    },
+    errorAlert: {
+        backgroundColor: '#ffeaea',
+        color: '#e74c3c',
+        padding: '12px',
+        borderRadius: '4px',
+        marginBottom: '20px',
+        textAlign: 'center',
+    },
+    demoInfo: {
+        backgroundColor: '#f8f9fa',
+        padding: '15px',
+        borderRadius: '4px',
+        marginTop: '20px',
+        fontSize: '14px',
+    },
+    demoText: {
+        fontWeight: 'bold',
+        marginBottom: '8px',
+        color: '#2c3e50',
+    },
+    demoList: {
+        listStyle: 'none',
+        padding: '0',
+        margin: '0',
+        textAlign: 'left',
+    },
+    demoListLi: {
+        marginBottom: '4px',
+        color: '#7f8c8d',
+    },
 };
 
 export default Login;
